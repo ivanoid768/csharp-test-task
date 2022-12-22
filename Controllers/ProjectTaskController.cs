@@ -21,23 +21,23 @@ namespace TaskTracker.Controllers
 
         // GET: api/ProjectTask
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProjectTask>>> GetTasks()
+        public async Task<ActionResult<IEnumerable<ProjectTaskDTO>>> GetTasks()
         {
-          if (_context.Tasks == null)
-          {
-              return NotFound();
-          }
-            return await _context.Tasks.ToListAsync();
+            if (_context.Tasks == null)
+            {
+                return NotFound();
+            }
+            return await _context.Tasks.Select(task => TaskToDTO(task)).ToListAsync();
         }
 
         // GET: api/ProjectTask/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<ProjectTask>> GetProjectTask(int id)
+        public async Task<ActionResult<ProjectTaskDTO>> GetProjectTask(int id)
         {
-          if (_context.Tasks == null)
-          {
-              return NotFound();
-          }
+            if (_context.Tasks == null)
+            {
+                return NotFound();
+            }
             var projectTask = await _context.Tasks.FindAsync(id);
 
             if (projectTask == null)
@@ -45,20 +45,20 @@ namespace TaskTracker.Controllers
                 return NotFound();
             }
 
-            return projectTask;
+            return TaskToDTO(projectTask);
         }
 
         // PUT: api/ProjectTask/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProjectTask(int id, ProjectTask projectTask)
+        public async Task<IActionResult> PutProjectTask(int id, ProjectTaskDTO projectTaskDTO)
         {
-            if (id != projectTask.Id)
+            if (id != projectTaskDTO.Id)
             {
                 return BadRequest();
             }
 
-            _context.Entry(projectTask).State = EntityState.Modified;
+            _context.Entry(projectTaskDTO).State = EntityState.Modified;
 
             try
             {
@@ -79,19 +79,37 @@ namespace TaskTracker.Controllers
             return NoContent();
         }
 
-        // POST: api/ProjectTask
+        // POST: api/ProjectTask/1
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<ProjectTask>> PostProjectTask(ProjectTask projectTask)
+        [HttpPost("{projectId}")]
+        public async Task<ActionResult<ProjectTask>> PostProjectTask(int projectId, CreateProjectTaskDTO projectTaskDTO)
         {
-          if (_context.Tasks == null)
-          {
-              return Problem("Entity set 'DataContext.Tasks'  is null.");
-          }
+            // if (_context.Tasks == null)
+            // {
+            //     return Problem("Entity set 'DataContext.Tasks'  is null.");
+            // }
+
+            var project = await _context.Projects.FindAsync(projectId);
+
+            if (project == null)
+            {
+                return NotFound();
+            }
+
+            var projectTask = new ProjectTask
+            {
+                Name = projectTaskDTO.Name,
+                Status = projectTaskDTO.Status,
+                Description = projectTaskDTO.Description,
+                Priority = projectTaskDTO.Priority
+            };
+
+            project.tasks.Add(projectTask);
+
             _context.Tasks.Add(projectTask);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetProjectTask", new { id = projectTask.Id }, projectTask);
+            return CreatedAtAction(nameof(GetProjectTask), new { id = projectTask.Id }, projectTask);
         }
 
         // DELETE: api/ProjectTask/5
@@ -117,6 +135,18 @@ namespace TaskTracker.Controllers
         private bool ProjectTaskExists(int id)
         {
             return (_context.Tasks?.Any(e => e.Id == id)).GetValueOrDefault();
+        }
+
+        private ProjectTaskDTO TaskToDTO(ProjectTask task)
+        {
+            return new ProjectTaskDTO
+            {
+                Id = task.Id,
+                Description = task.Description,
+                Name = task.Name,
+                Priority = task.Priority,
+                Status = task.Status
+            };
         }
     }
 }
