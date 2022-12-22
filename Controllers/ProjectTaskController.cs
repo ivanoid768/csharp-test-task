@@ -27,7 +27,7 @@ namespace TaskTracker.Controllers
             {
                 return NotFound();
             }
-            return await _context.Tasks.Select(task => TaskToDTO(task)).ToListAsync();
+            return await _context.Tasks.Include(t => t.Project).Select(task => TaskToDTO(task)).ToListAsync();
         }
 
         // GET: api/ProjectTask/5
@@ -38,7 +38,7 @@ namespace TaskTracker.Controllers
             {
                 return NotFound();
             }
-            var projectTask = await _context.Tasks.FindAsync(id);
+            var projectTask = await _context.Tasks.Where(t => t.Id == id).Include(t => t.Project).FirstAsync();
 
             if (projectTask == null)
             {
@@ -51,18 +51,27 @@ namespace TaskTracker.Controllers
         // PUT: api/ProjectTask/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProjectTask(int id, ProjectTaskDTO projectTaskDTO)
+        public async Task<ActionResult<ProjectTaskDTO>> PutProjectTask(int id, CreateProjectTaskDTO projectTaskDTO)
         {
-            if (id != projectTaskDTO.Id)
+            var projectTask = await _context.Tasks.Where(t => t.Id == id).Include(t => t.Project).FirstAsync();
+
+            if (projectTask == null)
             {
-                return BadRequest();
+                return NotFound();
             }
 
-            _context.Entry(projectTaskDTO).State = EntityState.Modified;
+            projectTask.Name = projectTaskDTO.Name;
+            projectTask.Status = projectTaskDTO.Status;
+            projectTask.Description = projectTaskDTO.Description;
+            projectTask.Priority = projectTaskDTO.Priority;
+
+            _context.Entry(projectTask).State = EntityState.Modified;
 
             try
             {
                 await _context.SaveChangesAsync();
+
+                return CreatedAtAction(nameof(GetProjectTask), new { id = projectTask.Id }, TaskToDTO(projectTask));
             }
             catch (DbUpdateConcurrencyException)
             {
@@ -75,21 +84,20 @@ namespace TaskTracker.Controllers
                     throw;
                 }
             }
-
-            return NoContent();
         }
 
         // POST: api/ProjectTask/1
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost("{projectId}")]
-        public async Task<ActionResult<ProjectTask>> PostProjectTask(int projectId, CreateProjectTaskDTO projectTaskDTO)
+        public async Task<ActionResult<ProjectTaskDTO>> PostProjectTask(int projectId, CreateProjectTaskDTO projectTaskDTO)
         {
             // if (_context.Tasks == null)
             // {
             //     return Problem("Entity set 'DataContext.Tasks'  is null.");
             // }
 
-            var project = await _context.Projects.FindAsync(projectId);
+            var project = await _context.Projects.Where(prj => prj.Id == projectId).Include(p => p.tasks)
+                .FirstAsync();
 
             if (project == null)
             {
@@ -103,13 +111,13 @@ namespace TaskTracker.Controllers
                 Description = projectTaskDTO.Description,
                 Priority = projectTaskDTO.Priority
             };
+            // Console.WriteLine(project.tasks);
 
             project.tasks.Add(projectTask);
 
-            _context.Tasks.Add(projectTask);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetProjectTask), new { id = projectTask.Id }, projectTask);
+            return CreatedAtAction(nameof(GetProjectTask), new { id = projectTask.Id }, TaskToDTO(projectTask));
         }
 
         // DELETE: api/ProjectTask/5
@@ -138,7 +146,7 @@ namespace TaskTracker.Controllers
         }
 
         // GET: api/ProjectTask
-        [HttpGet("{projectid}")]
+        [HttpGet("/project/{projectId}")]
         public async Task<ActionResult<IEnumerable<ProjectTaskDTO>>> GetProjectTasks(int projectId)
         {
             var project = await _context.Projects.FindAsync(projectId);
@@ -161,16 +169,16 @@ namespace TaskTracker.Controllers
             return tasks;
         }
 
-        private ProjectTaskDTO TaskToDTO(ProjectTask task)
-        {
-            return new ProjectTaskDTO
-            {
-                Id = task.Id,
-                Description = task.Description,
-                Name = task.Name,
-                Priority = task.Priority,
-                Status = task.Status
-            };
-        }
+        private static ProjectTaskDTO TaskToDTO(ProjectTask task) =>
+             new ProjectTaskDTO
+             {
+                 Id = task.Id,
+                 Description = task.Description,
+                 Name = task.Name,
+                 Priority = task.Priority,
+                 Status = task.Status,
+                 ProjectId = task.Project.Id
+             };
+
     }
 }

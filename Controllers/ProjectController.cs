@@ -54,7 +54,17 @@ namespace TaskTracker.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutProject(int id, CreateProjectDTO projectDTO)
         {
-            _context.Entry(projectDTO).State = EntityState.Modified;
+            var project = new Project
+            {
+                Id = id,
+                Name = projectDTO.Name,
+                StartDate = projectDTO.StartDate,
+                CompletitionDate = projectDTO.CompletitionDate,
+                Status = projectDTO.Status,
+                Priority = projectDTO.Priority
+            };
+
+            _context.Entry(project).State = EntityState.Modified;
 
             try
             {
@@ -91,7 +101,8 @@ namespace TaskTracker.Controllers
                 StartDate = projectDTO.StartDate,
                 CompletitionDate = projectDTO.CompletitionDate,
                 Status = projectDTO.Status,
-                Priority = projectDTO.Priority
+                Priority = projectDTO.Priority,
+                tasks = new List<ProjectTask>()
             };
 
             _context.Projects.Add(project);
@@ -120,8 +131,8 @@ namespace TaskTracker.Controllers
             return NoContent();
         }
 
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<ProjectDTO>>> GetProjects(FilterProjectDTO filter)
+        [HttpGet("/filter")]
+        public async Task<ActionResult<IEnumerable<ProjectDTO>>> GetFilteredProjects(FilterProjectDTO filter)
         {
             if (_context.Projects == null)
             {
