@@ -22,13 +22,13 @@ namespace TaskTracker.Controllers
 
         // GET: api/Project
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Project>>> GetProjects()
+        public async Task<ActionResult<IEnumerable<ProjectDTO>>> GetProjects()
         {
             if (_context.Projects == null)
             {
                 return NotFound();
             }
-            return await _context.Projects.ToListAsync();
+            return await _context.Projects.Select(x => ProjectToDTO(x)).ToListAsync();
         }
 
         // GET: api/Project/5
@@ -52,14 +52,9 @@ namespace TaskTracker.Controllers
         // PUT: api/Project/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutProject(int id, Project project)
+        public async Task<IActionResult> PutProject(int id, CreateProjectDTO projectDTO)
         {
-            if (id != project.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(project).State = EntityState.Modified;
+            _context.Entry(projectDTO).State = EntityState.Modified;
 
             try
             {
@@ -83,16 +78,26 @@ namespace TaskTracker.Controllers
         // POST: api/Project
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Project>> PostProject(Project project)
+        public async Task<ActionResult<ProjectDTO>> PostProject(CreateProjectDTO projectDTO)
         {
             if (_context.Projects == null)
             {
                 return Problem("Entity set 'DataContext.Projects'  is null.");
             }
+
+            var project = new Project
+            {
+                Name = projectDTO.Name,
+                StartDate = projectDTO.StartDate,
+                CompletitionDate = projectDTO.CompletitionDate,
+                Status = projectDTO.Status,
+                Priority = projectDTO.Priority
+            };
+
             _context.Projects.Add(project);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetProject), new { id = project.Id }, project);
+            return CreatedAtAction(nameof(GetProject), new { id = project.Id }, ProjectToDTO(project));
         }
 
         // DELETE: api/Project/5
