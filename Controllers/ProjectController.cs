@@ -91,7 +91,7 @@ namespace TaskTracker.Controllers
             _context.Projects.Add(project);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetProject", new { id = project.Id }, project);
+            return CreatedAtAction(nameof(GetProject), new { id = project.Id }, project);
         }
 
         // DELETE: api/Project/5
