@@ -120,6 +120,20 @@ namespace TaskTracker.Controllers
             return NoContent();
         }
 
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<ProjectDTO>>> GetProjects(FilterProjectDTO filter)
+        {
+            if (_context.Projects == null)
+            {
+                return NotFound();
+            }
+
+            return await _context.Projects
+                .Where(project => project.StartDate >= filter.StartDateFrom
+                    & project.StartDate <= filter.StartDateTo)
+                .Select(x => ProjectToDTO(x)).ToListAsync();
+        }
+
         private bool ProjectExists(int id)
         {
             return (_context.Projects?.Any(e => e.Id == id)).GetValueOrDefault();
