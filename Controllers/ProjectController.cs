@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TaskTracker.Models;
 
 namespace TaskTracker.Controllers
 {
@@ -23,21 +24,21 @@ namespace TaskTracker.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Project>>> GetProjects()
         {
-          if (_context.Projects == null)
-          {
-              return NotFound();
-          }
+            if (_context.Projects == null)
+            {
+                return NotFound();
+            }
             return await _context.Projects.ToListAsync();
         }
 
         // GET: api/Project/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Project>> GetProject(int id)
+        public async Task<ActionResult<ProjectDTO>> GetProject(int id)
         {
-          if (_context.Projects == null)
-          {
-              return NotFound();
-          }
+            if (_context.Projects == null)
+            {
+                return NotFound();
+            }
             var project = await _context.Projects.FindAsync(id);
 
             if (project == null)
@@ -45,7 +46,7 @@ namespace TaskTracker.Controllers
                 return NotFound();
             }
 
-            return project;
+            return ProjectToDTO(project);
         }
 
         // PUT: api/Project/5
@@ -84,10 +85,10 @@ namespace TaskTracker.Controllers
         [HttpPost]
         public async Task<ActionResult<Project>> PostProject(Project project)
         {
-          if (_context.Projects == null)
-          {
-              return Problem("Entity set 'DataContext.Projects'  is null.");
-          }
+            if (_context.Projects == null)
+            {
+                return Problem("Entity set 'DataContext.Projects'  is null.");
+            }
             _context.Projects.Add(project);
             await _context.SaveChangesAsync();
 
@@ -118,5 +119,16 @@ namespace TaskTracker.Controllers
         {
             return (_context.Projects?.Any(e => e.Id == id)).GetValueOrDefault();
         }
+
+        private static ProjectDTO ProjectToDTO(Project project) =>
+            new ProjectDTO
+            {
+                Id = project.Id,
+                Name = project.Name,
+                StartDate = project.StartDate,
+                CompletitionDate = project.CompletitionDate,
+                Status = project.Status,
+                Priority = project.Priority
+            };
     }
 }
