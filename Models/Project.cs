@@ -16,5 +16,5 @@ public class Project
 
     public int Priority {get; set;}
 
-    public List<ProjectTask>? tasks {get; set;}
+    public List<ProjectTask> tasks {get; set;}
 }

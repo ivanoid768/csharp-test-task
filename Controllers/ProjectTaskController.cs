@@ -137,6 +137,30 @@ namespace TaskTracker.Controllers
             return (_context.Tasks?.Any(e => e.Id == id)).GetValueOrDefault();
         }
 
+        // GET: api/ProjectTask
+        [HttpGet("{projectid}")]
+        public async Task<ActionResult<IEnumerable<ProjectTaskDTO>>> GetProjectTasks(int projectId)
+        {
+            var project = await _context.Projects.FindAsync(projectId);
+
+            if (project == null)
+            {
+                return NotFound();
+            }
+
+            var tasks = await _context.Tasks
+                .Where(t => t.Project == project)
+                .Select(task => TaskToDTO(task))
+                .ToListAsync();
+
+            if (tasks == null)
+            {
+                return NotFound();
+            }
+
+            return tasks;
+        }
+
         private ProjectTaskDTO TaskToDTO(ProjectTask task)
         {
             return new ProjectTaskDTO
